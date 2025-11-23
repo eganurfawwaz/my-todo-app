@@ -1,0 +1,1491 @@
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Clock, Calendar, Home, User, Plus, X, Search, ChevronLeft, ChevronRight, CheckCircle, Target, Sun, Menu, Moon, Settings, List, Palette, Zap, CheckSquare, Clock3, TrendingUp, Bell, Edit, CalendarCheck, Briefcase, BookOpen, Heart, Globe } from 'lucide-react';
+
+// --- DEFINISI PALET WARNA KUSTOM ---
+
+const THEMES = {
+  light: {
+    PRIMARY: '#837ab6', 
+    ACCENT_LIGHT: '#9d85b6', 
+    ACCENT_PINK: '#cc8db3', 
+    BG_MAIN: '#f7f7fa', 
+    BG_CARD: 'white', 
+    TEXT_DARK: '#250e2c', 
+    TEXT_MEDIUM: '#4a4066', 
+    INVERT_TEXT: 'white',
+    BORDER: '#e0e0e0',
+  },
+  dark: {
+    PRIMARY: '#b9aaff', 
+    ACCENT_LIGHT: '#a998c7', 
+    ACCENT_PINK: '#ffb3c1', 
+    BG_MAIN: '#1c1c28', 
+    BG_CARD: '#2a2a3e', 
+    TEXT_DARK: '#f0f0f5', 
+    TEXT_MEDIUM: '#a9a9b9', 
+    INVERT_TEXT: '#250e2c',
+    BORDER: '#3d3d52',
+  }
+};
+
+// --- KAMUS TERJEMAHAN (BAHASA) ---
+const TRANSLATIONS = {
+  id: {
+    // Menu
+    home: 'Beranda',
+    calendar: 'Kalender',
+    profile: 'Profil',
+    categories: 'Kategori Tugas',
+    settings: 'Pengaturan',
+    darkMode: 'Mode Gelap',
+    lightMode: 'Mode Terang',
+    language: 'Bahasa: Indonesia',
+    
+    // Beranda & Sapaan
+    goodMorning: 'Selamat Pagi',
+    goodAfternoon: 'Selamat Siang',
+    goodEvening: 'Selamat Sore',
+    goodNight: 'Selamat Malam',
+    todayTasks: 'Tugas Hari Ini',
+    upcomingTasks: 'Tugas Mendatang',
+    completed: 'Selesai',
+    pending: 'Tertunda',
+    noTasksTitle: 'Semua Beres!',
+    noTasksDesc: 'Tidak ada tugas aktif. Tekan tombol Plus di bawah untuk mulai membuat jadwal.',
+    addTaskBtn: 'Tambahkan Tugas',
+    noTasksToday: 'Tidak ada tugas terdaftar hari ini.',
+    noTasksUpcoming: 'Tidak ada tugas mendatang.',
+    moreTasks: 'tugas lainnya...',
+    
+    // Form Tambah
+    addTaskTitle: 'Buat Tugas Baru',
+    taskNameLabel: 'Nama Tugas',
+    taskNamePlaceholder: 'Contoh: Merapikan email kantor',
+    categoryLabel: 'Kategori Tugas',
+    startDateLabel: 'Tanggal Mulai Aktivitas (Opsional)',
+    dueDateLabel: 'Target Tanggal Selesai (Wajib)',
+    timeLabel: 'Waktu Pengingat (Opsional)',
+    saveBtn: 'Tambahkan ke Daftar',
+    errorNameDate: 'Nama Tugas dan Target Tanggal Selesai harus diisi.',
+    errorDateStart: 'Tanggal Mulai tidak boleh setelah Target Tanggal Selesai.',
+    notifReminder: 'Pengingat disetel untuk jam',
+    notifAdded: 'Tugas ditambahkan',
+    
+    // Kategori
+    catPersonal: 'Pribadi',
+    catWork: 'Kerja',
+    catEdu: 'Pendidikan',
+    catGroupTitle: 'Pengelompokan Tugas',
+    catSubtitle: 'Filter dan lihat tugas Anda berdasarkan area fokus utama.',
+    total: 'Total',
+    noTasksInCat: 'Tidak ada tugas aktif di kategori ini.',
+
+    // Kalender (Data)
+    months: ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"],
+    daysShort: ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+    holidaysTitle: "Hari Libur Nasional & Cuti Bersama",
+    noHolidays: "🎉 Tidak ada libur nasional/cuti bersama di bulan ini!",
+
+    // Profil & Edit
+    editProfileTitle: "Edit Data Diri",
+    nameLabel: "Nama Lengkap",
+    namePlaceholder: "Masukkan Nama Anda",
+    roleLabel: "Role/Jabatan",
+    rolePlaceholder: "Contoh: Mahasiswa, Developer",
+    saveProfileBtn: "Simpan Perubahan",
+    defaultRole: "Pengelola Waktu Terbaik",
+    taskPerformance: "Performa Tugas",
+    totalCompletedWeek: "Total Tugas Selesai Mgg Ini",
+    tasksUnit: "Tugas",
+    weeklyChartTitle: "Tugas Selesai Mingguan (Hitungan)",
+    chartDays: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+
+    // Settings
+    settingsTitle: "Halaman Pengaturan",
+    settingsDesc: "Pengaturan akun, notifikasi, dan preferensi umum lainnya.",
+  },
+  en: {
+    // Menu
+    home: 'Home',
+    calendar: 'Calendar',
+    profile: 'Profile',
+    categories: 'Task Categories',
+    settings: 'Settings',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    language: 'Language: English',
+    
+    // Beranda & Greetings
+    goodMorning: 'Good Morning',
+    goodAfternoon: 'Good Afternoon',
+    goodEvening: 'Good Evening',
+    goodNight: 'Good Night',
+    todayTasks: "Today's Tasks",
+    upcomingTasks: 'Upcoming Tasks',
+    completed: 'Completed',
+    pending: 'Pending',
+    noTasksTitle: 'All Done!',
+    noTasksDesc: 'No active tasks. Tap the Plus button below to start scheduling.',
+    addTaskBtn: 'Add Task',
+    noTasksToday: 'No tasks scheduled for today.',
+    noTasksUpcoming: 'No upcoming tasks.',
+    moreTasks: 'more tasks...',
+
+    // Add Form
+    addTaskTitle: 'Create New Task',
+    taskNameLabel: 'Task Name',
+    taskNamePlaceholder: 'E.g., Organize office emails',
+    categoryLabel: 'Task Category',
+    startDateLabel: 'Start Date (Optional)',
+    dueDateLabel: 'Due Date (Required)',
+    timeLabel: 'Reminder Time (Optional)',
+    saveBtn: 'Add to List',
+    errorNameDate: 'Task Name and Due Date are required.',
+    errorDateStart: 'Start Date cannot be after Due Date.',
+    notifReminder: 'Reminder set for',
+    notifAdded: 'Task added',
+
+    // Categories
+    catPersonal: 'Personal',
+    catWork: 'Work',
+    catEdu: 'Education',
+    catGroupTitle: 'Task Grouping',
+    catSubtitle: 'Filter and view your tasks based on main focus areas.',
+    total: 'Total',
+    noTasksInCat: 'No active tasks in this category.',
+
+    // Calendar (Data)
+    months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    daysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    holidaysTitle: "National Holidays",
+    noHolidays: "🎉 No national holidays this month!",
+
+    // Profil & Edit
+    editProfileTitle: "Edit Profile",
+    nameLabel: "Full Name",
+    namePlaceholder: "Enter your name",
+    roleLabel: "Role/Title",
+    rolePlaceholder: "E.g., Student, Developer",
+    saveProfileBtn: "Save Changes",
+    defaultRole: "Best Time Manager",
+    taskPerformance: "Task Performance",
+    totalCompletedWeek: "Tasks Completed This Week",
+    tasksUnit: "Tasks",
+    weeklyChartTitle: "Weekly Completed Tasks (Count)",
+    chartDays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+
+    // Settings
+    settingsTitle: "Settings Page",
+    settingsDesc: "Account settings, notifications, and general preferences.",
+  }
+};
+
+
+// --- Komponen Toast Notifikasi ---
+const NotificationToast = ({ message, isVisible, COLORS }) => {
+    if (!isVisible) return null;
+
+    return (
+        <div 
+            className="absolute top-8 left-1/2 p-4 rounded-2xl shadow-2xl z-[60] transition-all duration-300 flex items-center space-x-3"
+            style={{ 
+                backgroundColor: COLORS.TEXT_DARK, 
+                color: COLORS.BG_CARD, 
+                width: '90%', 
+                animation: 'slideDownFade 4s forwards',
+                transform: 'translateX(-50%)', 
+                borderLeft: `5px solid ${COLORS.ACCENT_PINK}`
+            }}
+        >
+            <style jsx global>{`
+                @keyframes slideDownFade {
+                    0% { opacity: 0; transform: translate(-50%, -100%); } 
+                    10% { opacity: 1; transform: translate(-50%, 0); } 
+                    90% { opacity: 1; transform: translate(-50%, 0); } 
+                    100% { opacity: 0; transform: translate(-50%, -100%); } 
+                }
+            `}</style>
+            
+            <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+                <Bell className="w-5 h-5 text-white"/>
+            </div>
+            
+            <div className="flex flex-col">
+                <span className="font-bold text-sm">Sukses!</span>
+                <span className="text-xs opacity-90">{message}</span>
+            </div>
+        </div>
+    );
+};
+
+
+// --- Komponen Sidebar/Drawer ---
+
+const Sidebar = ({ isVisible, onClose, toggleTheme, currentTheme, toggleLanguage, currentLanguage, navigate, userProfile, COLORS, t }) => {
+    
+    const navItems = [
+        { name: t.home, icon: Home, action: () => { navigate('beranda'); onClose(); } },
+        { name: t.calendar, icon: Calendar, action: () => { navigate('kalender'); onClose(); } },
+        { name: t.profile, icon: User, action: () => { navigate('profile'); onClose(); } },
+        { name: t.categories, icon: List, action: () => { navigate('kategori'); onClose(); } },
+        { name: t.settings, icon: Settings, action: () => { navigate('settings'); onClose(); } },
+        { name: currentTheme === 'dark' ? t.lightMode : t.darkMode, icon: currentTheme === 'dark' ? Sun : Moon, action: toggleTheme },
+        { name: t.language, icon: Globe, action: toggleLanguage },
+    ];
+    
+    if (!isVisible) return null;
+    
+    const overlayStyle = {
+        backgroundColor: currentTheme === 'light' ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.1)',
+    };
+    
+    const sidebarStyle = {
+        backgroundColor: COLORS.BG_CARD,
+        color: COLORS.TEXT_DARK,
+        transform: isVisible ? 'translateX(0)' : 'translateX(-100%)',
+    };
+
+    const LAVENDER_PRIMARY = '#837ab6';
+    const LAVENDER_LIGHT = '#9d85b6';
+    const LAVENDER_PINK = '#cc8db3';
+
+    return (
+        <>
+            <div 
+                className="absolute inset-0 z-40 transition-opacity duration-300"
+                style={overlayStyle}
+                onClick={onClose}
+            ></div>
+
+            <div 
+                className="absolute top-0 left-0 h-full w-72 shadow-2xl z-50 transition-transform duration-300 ease-in-out p-6 flex flex-col space-y-4 rounded-r-[3rem]"
+                style={sidebarStyle}
+            >
+                <div className="flex flex-col mb-2">
+                     <div className="flex items-center justify-between">
+                         <div className="flex items-center space-x-3">
+                             <div className="w-14 h-14 rounded-full overflow-hidden shadow-lg border-2" style={{ backgroundColor: LAVENDER_LIGHT, borderColor: LAVENDER_PINK }}>
+                                  <div className="w-full h-full flex items-center justify-center text-xl font-bold" style={{ backgroundColor: LAVENDER_PINK, color: COLORS.INVERT_TEXT }}>
+                                     {userProfile.name ? userProfile.name[0] : 'E'}
+                                  </div>
+                             </div>
+                             <div className="flex flex-col">
+                                 <span className="text-lg font-bold truncate w-32" style={{ color: COLORS.TEXT_DARK }}>{userProfile.name}</span>
+                                 <span className="text-xs opacity-70 italic" style={{ color: COLORS.TEXT_MEDIUM }}>{userProfile.role || t.defaultRole}</span>
+                             </div>
+                         </div>
+                         <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100/10 transition" style={{ color: COLORS.TEXT_DARK }}>
+                             <X className="w-6 h-6"/>
+                         </button>
+                     </div>
+
+                     <div className="w-full h-1.5 rounded-full mt-4 shadow-sm" 
+                          style={{ 
+                              background: `linear-gradient(to right, ${LAVENDER_PRIMARY}, ${LAVENDER_LIGHT}, ${LAVENDER_PINK})`,
+                              boxShadow: `0 2px 4px ${LAVENDER_PRIMARY}40`
+                          }} 
+                     />
+                </div>
+
+                <nav className="flex flex-col space-y-3 mt-2 overflow-y-auto scrollbar-hide">
+                    {navItems.map((item, index) => (
+                        <button
+                            key={index}
+                            onClick={item.action}
+                            className="flex items-center p-3 rounded-2xl transition-all duration-300 hover:shadow-lg hover:translate-x-2 group relative overflow-hidden"
+                            style={{ 
+                                background: `linear-gradient(135deg, ${COLORS.BG_MAIN} 0%, rgba(131, 122, 182, 0.05) 50%, rgba(204, 141, 179, 0.1) 100%)`, 
+                                borderLeft: `6px solid ${LAVENDER_PINK}`,
+                                borderBottom: `1px solid ${COLORS.BORDER}`,
+                            }}
+                        >
+                            <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300" style={{ pointerEvents: 'none' }}></div>
+                            <div className="p-2.5 rounded-xl mr-3 shadow-sm transition-transform group-hover:scale-110" 
+                                 style={{ backgroundColor: `${LAVENDER_PRIMARY}15` }}>
+                                <item.icon className="w-5 h-5" style={{ color: LAVENDER_PRIMARY }}/>
+                            </div>
+                            <span className="text-sm font-bold relative z-10" style={{ color: COLORS.TEXT_DARK }}>{item.name}</span>
+                            <ChevronRight className="w-4 h-4 ml-auto opacity-40 group-hover:opacity-100 transition-opacity" style={{ color: LAVENDER_LIGHT }}/>
+                        </button>
+                    ))}
+                </nav>
+            </div>
+        </>
+    );
+};
+
+
+// --- Komponen Kalender ---
+const CalendarView = ({ currentMonth, setCurrentMonth, holidays, tasks, COLORS, t }) => {
+  const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+  const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+  const startDayIndex = (firstDayOfMonth.getDay() + 6) % 7; 
+  const totalDays = lastDayOfMonth.getDate();
+  const today = new Date();
+  
+  const daysInMonth = useMemo(() => {
+    const days = [];
+    
+    const prevMonthDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 0);
+    for (let i = startDayIndex; i > 0; i--) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, prevMonthDate.getDate() - i + 1);
+      days.push({
+        day: date.getDate(),
+        isCurrentMonth: false,
+        dateKey: date,
+      });
+    }
+
+    for (let i = 1; i <= totalDays; i++) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), i);
+      days.push({
+        day: i,
+        isCurrentMonth: true,
+        dateKey: date,
+      });
+    }
+
+    const nextMonthDays = 42 - days.length;
+    for (let i = 1; i <= nextMonthDays; i++) {
+      const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, i);
+      days.push({
+        day: i,
+        isCurrentMonth: false,
+        dateKey: date,
+      });
+    }
+    return days;
+  }, [currentMonth, startDayIndex, totalDays]);
+
+  const handleMonthChange = (offset) => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev.getFullYear(), prev.getMonth() + offset, 1);
+      return newMonth;
+    });
+  };
+
+  const holidayMap = useMemo(() => {
+    return holidays.reduce((acc, h) => {
+      const dateParts = h.date.split('-').map(Number); 
+      const dateString = `${dateParts[0]}-${dateParts[1]}-${dateParts[2]}`; 
+      acc[dateString] = h;
+      return acc;
+    }, {});
+  }, [holidays]);
+
+  const currentMonthHolidays = useMemo(() => {
+    const currentYear = currentMonth.getFullYear();
+    const currentMonthIndex = currentMonth.getMonth() + 1;
+    
+    return holidays.filter(h => {
+        const dateParts = h.date.split('-').map(Number);
+        return dateParts[0] === currentYear && dateParts[1] === currentMonthIndex;
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [holidays, currentMonth]);
+  
+  const tasksMap = useMemo(() => {
+      const map = {};
+      tasks.forEach(task => {
+          const date = new Date(task.dueDate);
+          const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+          if (!map[dateString]) {
+              map[dateString] = [];
+          }
+          map[dateString].push(task);
+      });
+      return map;
+  }, [tasks]);
+
+
+  return (
+    <div className="p-4 flex flex-col h-full" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+      <div className="flex justify-between items-center mb-4 p-3 rounded-xl shadow-md" style={{ backgroundColor: COLORS.BG_CARD, borderBottom: `2px solid ${COLORS.ACCENT_LIGHT}` }}>
+        <button
+          onClick={() => handleMonthChange(-1)}
+          className="p-2 rounded-full transition shadow-lg"
+          style={{ backgroundColor: COLORS.ACCENT_LIGHT, color: COLORS.INVERT_TEXT }}
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        {/* Menggunakan t.months untuk nama bulan dinamis */}
+        <h2 className="text-xl font-extrabold" style={{ color: COLORS.TEXT_DARK }}>
+          {t.months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+        </h2>
+        <button
+          onClick={() => handleMonthChange(1)}
+          className="p-2 rounded-full transition shadow-lg"
+          style={{ backgroundColor: COLORS.ACCENT_LIGHT, color: COLORS.INVERT_TEXT }}
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="flex-grow grid grid-cols-7 gap-1 text-center text-sm p-3 rounded-2xl shadow-xl" style={{ backgroundColor: COLORS.BG_CARD }}>
+        {/* Menggunakan t.daysShort untuk nama hari dinamis */}
+        {t.daysShort.map(day => (
+          <div key={day} className="text-xs font-bold py-2" style={{ color: COLORS.PRIMARY }}>
+            {day}
+          </div>
+        ))}
+
+        {daysInMonth.map((day, index) => {
+          const date = day.dateKey;
+          const dateString = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`; 
+          const isHoliday = holidayMap[dateString];
+          const todayDateKey = today.getDate();
+          const todayMonthKey = today.getMonth();
+          const todayYearKey = today.getFullYear();
+          const isToday = day.day === todayDateKey && date.getMonth() === todayMonthKey && date.getFullYear() === todayYearKey;
+          const dayHasTasks = tasksMap[dateString]?.length > 0;
+          
+          let bgColor = 'transparent';
+          let textColor = day.isCurrentMonth ? COLORS.TEXT_DARK : COLORS.ACCENT_LIGHT;
+          let ringColor = '';
+          let hoverBg = COLORS.BG_MAIN;
+
+          if (isHoliday && day.isCurrentMonth) {
+            textColor = COLORS.ACCENT_PINK;
+            hoverBg = COLORS.ACCENT_PINK + '15';
+          }
+          if (isToday) {
+            bgColor = COLORS.PRIMARY;
+            textColor = COLORS.INVERT_TEXT;
+            ringColor = `ring-2 ring-offset-2 ring-opacity-70`;
+            hoverBg = '';
+          }
+
+          return (
+            <div
+              key={index}
+              title={isHoliday ? isHoliday.name : dayHasTasks ? `${day.day}: ${tasksMap[dateString].length} ${t.tasksUnit}` : ''}
+              className={`flex flex-col items-center justify-center p-1 rounded-xl transition duration-150 cursor-pointer ${!day.isCurrentMonth ? 'opacity-50' : ''}`}
+              style={{ color: textColor }}
+              onMouseOver={(e) => { if (hoverBg) e.currentTarget.style.backgroundColor = hoverBg; }}
+              onMouseOut={(e) => { if (hoverBg) e.currentTarget.style.backgroundColor = 'transparent'; }}
+            >
+              <span className={`w-8 h-8 flex items-center justify-center ${ringColor} rounded-full text-sm font-semibold`}
+                style={{ backgroundColor: isToday ? bgColor : 'transparent', color: isToday ? textColor : textColor, borderColor: isToday ? COLORS.PRIMARY : 'transparent' }}
+              >
+                {day.day}
+              </span>
+              <div className="flex mt-0.5 space-x-1">
+                {dayHasTasks && (<div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS.ACCENT_PINK }} />)}
+                {isHoliday && !dayHasTasks && (<div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS.ACCENT_PINK }} />)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+       
+       <div className="mt-6 p-4 border rounded-2xl shadow-inner max-h-48 overflow-y-auto" style={{ backgroundColor: COLORS.ACCENT_LIGHT + '15', borderColor: COLORS.ACCENT_LIGHT }}>
+           <h4 className="text-sm font-extrabold mb-2 border-b pb-1 flex items-center" style={{ color: COLORS.TEXT_DARK, borderColor: COLORS.ACCENT_LIGHT }}>
+               <Calendar className="w-4 h-4 mr-2" style={{ color: COLORS.ACCENT_PINK }}/> {t.holidaysTitle} ({currentMonth.getFullYear()})
+           </h4>
+           {currentMonthHolidays.length > 0 ? (
+               currentMonthHolidays.map((h, i) => (
+                   <p key={i} className="text-xs mb-1 leading-relaxed" style={{ color: COLORS.TEXT_MEDIUM }}>
+                       <span className="font-extrabold w-4 inline-block" style={{ color: COLORS.ACCENT_PINK }}>{h.date.split('-')[2]}</span> / {h.date.split('-')[1]}: <span className="font-semibold">{h.name}</span> (<span className="italic">{h.type}</span>)
+                   </p>
+               ))
+           ) : (
+                <p className="text-xs italic p-2 rounded-xl text-center" style={{ color: COLORS.PRIMARY, backgroundColor: COLORS.BG_CARD }}>{t.noHolidays}</p>
+           )}
+       </div>
+    </div>
+  );
+};
+
+
+// --- Komponen Layar Beranda ---
+
+const BerandaScreen = ({ tasks, openAddTaskModal, toggleSidebar, toggleTaskCompleted, userProfile, COLORS, t, language }) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); 
+  const todayDateString = today.toDateString();
+  
+  const todayTasks = useMemo(() => {
+    return tasks.filter(t => {
+        const dueDate = new Date(t.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        const isDueToday = dueDate.getTime() === today.getTime();
+        const isStartToday = t.startDate && (new Date(t.startDate).toDateString() === todayDateString);
+        return isDueToday || isStartToday;
+    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)); 
+  }, [tasks, todayDateString, today]);
+
+  const upcomingTasks = useMemo(() => {
+    return tasks.filter(t => {
+        const dueDate = new Date(t.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+        return dueDate.getTime() > today.getTime(); 
+    }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  }, [tasks, today]);
+  
+  const overdueTasks = tasks.filter(t => 
+      !t.completed && new Date(t.dueDate).setHours(0, 0, 0, 0) < today.getTime()
+  );
+  
+  const pendingTasks = [...todayTasks, ...upcomingTasks].filter(t => !t.completed); 
+  
+  const tasksCompleted = tasks.filter(t => t.completed).length;
+  const tasksPending = pendingTasks.length + overdueTasks.filter(t => !t.completed).length;
+  
+  const isTasksEmpty = tasks.length === 0;
+
+  // Header dan Sapaan yang menggunakan Translasi
+  const GreetingCard = () => {
+    const hours = today.getHours();
+    let greeting = t.goodNight;
+    
+    // Logika sapaan waktu
+    if (hours >= 4 && hours < 11) greeting = t.goodMorning;
+    else if (hours >= 11 && hours < 15) greeting = t.goodAfternoon;
+    else if (hours >= 15 && hours < 18) greeting = t.goodEvening;
+    else greeting = t.goodNight;
+
+    return (
+        <div className="p-5 rounded-3xl shadow-xl flex flex-col justify-between h-40" 
+             style={{ 
+                 background: `linear-gradient(135deg, ${COLORS.ACCENT_LIGHT}, ${COLORS.PRIMARY})`,
+                 color: COLORS.INVERT_TEXT 
+             }}>
+            <div className="flex justify-between items-start">
+                <button
+                    onClick={toggleSidebar}
+                    className="p-2 rounded-full shadow-lg transition hover:opacity-90"
+                    style={{ backgroundColor: COLORS.PRIMARY + '50', color: COLORS.INVERT_TEXT }}
+                    title="Menu"
+                >
+                    <Menu className="w-6 h-6" />
+                </button>
+                <div className="w-10 h-10 rounded-full overflow-hidden border-2 shadow-md" style={{ backgroundColor: COLORS.ACCENT_PINK, borderColor: COLORS.INVERT_TEXT }}>
+                     <div className="w-full h-full flex items-center justify-center text-xl font-bold" style={{ backgroundColor: COLORS.ACCENT_PINK, color: COLORS.INVERT_TEXT }}>
+                        {userProfile.name ? userProfile.name[0] : 'E'}
+                     </div>
+                </div>
+            </div>
+            
+            <div className='mt-2'>
+                <p className="text-sm font-medium opacity-80">{greeting},</p>
+                {/* Data Diri (User Profile) tetap sesuai input user */}
+                <h1 className="text-2xl font-extrabold truncate">{userProfile.name}</h1>
+            </div>
+        </div>
+    );
+  };
+  
+  const SummaryCard = ({ icon: Icon, label, value, color }) => (
+      <div className="p-4 rounded-xl shadow-md flex items-center space-x-3 w-1/2" 
+           style={{ backgroundColor: COLORS.BG_CARD, borderLeft: `4px solid ${color}` }}>
+          <div className="p-2 rounded-full" style={{ backgroundColor: color + '30' }}>
+              <Icon className="w-6 h-6" style={{ color: color }}/>
+          </div>
+          <div>
+              <p className="text-xs font-medium" style={{ color: COLORS.TEXT_MEDIUM }}>{label}</p>
+              <h3 className="text-xl font-extrabold" style={{ color: COLORS.TEXT_DARK }}>{value}</h3>
+          </div>
+      </div>
+  );
+
+  const TodayTaskItem = ({ task }) => (
+    <div key={task.id} className="flex items-center justify-between p-3 border rounded-xl transition hover:shadow-lg" 
+         style={{ backgroundColor: COLORS.BG_CARD, borderColor: COLORS.BORDER }}>
+      <div className="flex items-center space-x-3">
+        <button 
+            onClick={() => toggleTaskCompleted(task.id)}
+            className={`w-6 h-6 rounded-full border-2 transition flex items-center justify-center`} 
+            style={{ 
+                backgroundColor: task.completed ? COLORS.ACCENT_PINK : COLORS.BG_MAIN, 
+                borderColor: task.completed ? COLORS.ACCENT_PINK : COLORS.ACCENT_LIGHT,
+                boxShadow: task.completed ? `0 0 5px ${COLORS.ACCENT_PINK}` : 'none'
+            }}
+        >
+          {task.completed && <CheckSquare className="w-4 h-4" style={{ color: COLORS.INVERT_TEXT }} fill={COLORS.INVERT_TEXT}/>}
+        </button>
+        <span className={`${task.completed ? 'line-through italic opacity-60' : 'font-medium'}`} style={{ color: task.completed ? COLORS.TEXT_MEDIUM : COLORS.TEXT_DARK }}>
+          {task.name}
+        </span>
+      </div>
+      <span className="text-xs px-3 py-1 rounded-full font-semibold shadow-inner" 
+            style={{ color: COLORS.TEXT_MEDIUM, backgroundColor: COLORS.BG_MAIN }}>
+        {task.time}
+      </span>
+    </div>
+  );
+
+
+  return (
+    <div className="p-4 space-y-6 flex flex-col h-full overflow-y-auto" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+      
+      {/* Header Sapaan */}
+      <GreetingCard />
+      
+      {/* Ringkasan Tugas */}
+      <div className='flex space-x-4 justify-between'>
+          <SummaryCard 
+              icon={CheckSquare} 
+              label={t.completed} 
+              value={tasksCompleted} 
+              color={COLORS.ACCENT_PINK} 
+          />
+          <SummaryCard 
+              icon={Clock3} 
+              label={t.pending} 
+              value={tasksPending} 
+              color={COLORS.ACCENT_LIGHT} 
+          />
+      </div>
+      
+      {/* Area Utama Konten */}
+      {isTasksEmpty ? (
+        <div className="flex flex-col items-center justify-center p-8 text-center rounded-3xl shadow-xl h-[450px] mt-4" style={{ backgroundColor: COLORS.BG_CARD, color: COLORS.TEXT_DARK }}>
+            <svg viewBox="0 0 100 100" className="w-40 h-40 mb-4" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill={COLORS.ACCENT_LIGHT + '30'} stroke={COLORS.ACCENT_LIGHT} strokeWidth="2"/>
+                <path d="M30 50 L45 65 L70 40" fill="none" stroke={COLORS.PRIMARY} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="25" y="75" width="50" height="10" rx="5" fill={COLORS.ACCENT_PINK} opacity="0.6"/>
+            </svg>
+
+            <h2 className="text-lg font-extrabold mb-2">{t.noTasksTitle}</h2>
+            <p className="text-sm font-medium mb-6" style={{ color: COLORS.TEXT_MEDIUM }}>
+                {t.noTasksDesc}
+            </p>
+            <button
+                onClick={openAddTaskModal}
+                className="py-3 px-6 rounded-xl text-white font-bold shadow-lg transition hover:shadow-xl"
+                style={{ backgroundColor: COLORS.PRIMARY }}
+            >
+                <Plus className="w-5 h-5 inline mr-2"/> {t.addTaskBtn}
+            </button>
+        </div>
+      ) : (
+        <>
+            {/* Tugas Hari Ini */}
+            <div className="space-y-4">
+                <h2 className="text-lg font-extrabold flex items-center" style={{ color: COLORS.TEXT_DARK }}>
+                    <Sun className='w-5 h-5 mr-2' style={{ color: COLORS.PRIMARY }}/> {t.todayTasks}
+                </h2>
+                <div className="space-y-3 p-3 rounded-2xl shadow-inner" style={{ backgroundColor: COLORS.BG_CARD }}>
+                    {todayTasks.length > 0 ? (
+                      todayTasks.map(task => <TodayTaskItem key={task.id} task={task} />)
+                    ) : (
+                      <div className="text-center py-4 rounded-xl" style={{ backgroundColor: COLORS.BG_MAIN }}>
+                        <Clock className="w-6 h-6 mx-auto mb-1" style={{ color: COLORS.ACCENT_LIGHT }}/>
+                        <p className="text-sm font-medium" style={{ color: COLORS.TEXT_MEDIUM }}>{t.noTasksToday}</p>
+                      </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Tugas Mendatang */}
+            <div className="space-y-4 pb-20">
+                <h2 className="text-lg font-extrabold flex items-center" style={{ color: COLORS.TEXT_DARK }}>
+                    <TrendingUp className='w-5 h-5 mr-2' style={{ color: COLORS.ACCENT_PINK }}/> {t.upcomingTasks}
+                </h2>
+                <div className="space-y-3 p-3 rounded-2xl shadow-inner" style={{ backgroundColor: COLORS.BG_CARD }}>
+                    {upcomingTasks.length > 0 ? (
+                      upcomingTasks.slice(0, 3).map(task => (
+                        <div key={task.id} className="flex items-center justify-between p-3 border rounded-xl" 
+                           style={{ backgroundColor: COLORS.BG_MAIN, borderColor: COLORS.BORDER }}>
+                            <div className="flex items-center space-x-3">
+                                <Target className="w-4 h-4" style={{ color: COLORS.PRIMARY }} />
+                                <span className="font-medium" style={{ color: COLORS.TEXT_DARK }}>
+                                    {task.name}
+                                </span>
+                            </div>
+                            <span className="text-xs px-3 py-1 rounded-full font-semibold shadow-inner" 
+                                  style={{ backgroundColor: COLORS.ACCENT_LIGHT + '30', color: COLORS.TEXT_DARK }}>
+                                {/* Format Tanggal Dinamis (ID/EN) */}
+                                {new Date(task.dueDate).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short' })}
+                            </span>
+                        </div>
+                      ))
+                    ) : (
+                        <div className="text-center py-4 rounded-xl" style={{ backgroundColor: COLORS.BG_MAIN }}>
+                            <Clock className="w-6 h-6 mx-auto mb-1" style={{ color: COLORS.ACCENT_LIGHT }}/>
+                            <p className="text-sm font-medium" style={{ color: COLORS.TEXT_MEDIUM }}>{t.noTasksUpcoming}</p>
+                        </div>
+                    )}
+                    {upcomingTasks.length > 3 && (
+                        <p className='text-sm text-center pt-2' style={{ color: COLORS.TEXT_MEDIUM }}>
+                            +{upcomingTasks.length - 3} {t.moreTasks}
+                        </p>
+                    )}
+                </div>
+            </div>
+        </>
+      )}
+
+    </div>
+  );
+};
+
+// --- Update Screen Tambah Aktivitas (Full Translated) ---
+const TambahAktivitasScreen = ({ navigate, addTask, isVisible, closeModal, showNotification, COLORS, t }) => {
+  const [taskName, setTaskName] = useState('');
+  const [taskStartDate, setTaskStartDate] = useState(''); 
+  const [taskDate, setTaskDate] = useState(''); 
+  const [taskTime, setTaskTime] = useState('');
+  const [taskCategory, setTaskCategory] = useState(t.catPersonal); 
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  const CATEGORIES = [t.catPersonal, t.catWork, t.catEdu]; 
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setErrorMessage('');
+
+    if (!taskName.trim() || !taskDate) {
+        setErrorMessage(t.errorNameDate); // Translated Error
+        return;
+    }
+    
+    const start = taskStartDate ? new Date(taskStartDate) : null;
+    const due = new Date(taskDate);
+
+    if (start && start > due) {
+        setErrorMessage(t.errorDateStart); // Translated Error
+        return;
+    }
+
+    const newTask = {
+        id: Date.now(),
+        name: taskName,
+        startDate: taskStartDate || taskDate, 
+        dueDate: taskDate,
+        time: taskTime || 'Sepanjang Hari',
+        category: taskCategory,
+        completed: false,
+    };
+    
+    addTask(newTask);
+
+    if (taskTime && taskTime !== 'Sepanjang Hari') {
+        const timeFormatted = new Date(`2000-01-01T${taskTime}`).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        showNotification(`${t.notifReminder} ${timeFormatted}!`); // Translated Notification
+    } else {
+         showNotification(`${t.notifAdded} "${taskName}"`); // Translated Notification
+    }
+
+    setTaskName('');
+    setTaskStartDate('');
+    setTaskDate('');
+    setTaskTime('');
+    setTaskCategory(t.catPersonal);
+    closeModal();
+  };
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="absolute inset-0 z-50 p-6 flex flex-col h-full overflow-y-auto transform transition duration-300 ease-in-out" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+      <div className="flex items-center mb-10 border-b pb-4" style={{ borderColor: COLORS.ACCENT_LIGHT }}>
+        <button onClick={closeModal} className="p-2 rounded-full hover:opacity-80 transition">
+          <ChevronLeft className="w-6 h-6" style={{ color: COLORS.TEXT_DARK }} />
+        </button>
+        <h1 className="text-2xl font-extrabold ml-4" style={{ color: COLORS.TEXT_DARK }}>{t.addTaskTitle}</h1>
+      </div>
+      
+      {errorMessage && (
+          <div className="p-3 mb-4 rounded-xl font-medium text-sm" style={{ backgroundColor: COLORS.ACCENT_PINK + '20', color: COLORS.TEXT_DARK, border: `1px solid ${COLORS.ACCENT_PINK}` }}>
+              <X className="w-4 h-4 inline mr-2" style={{ color: COLORS.ACCENT_PINK }}/>
+              {errorMessage}
+          </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-6 flex-grow">
+        <div className="space-y-2">
+          <label htmlFor="taskName" className="text-sm font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>
+            {t.taskNameLabel}
+          </label>
+          <input
+            id="taskName"
+            type="text"
+            value={taskName}
+            onChange={(e) => setTaskName(e.target.value)}
+            placeholder={t.taskNamePlaceholder}
+            className="w-full p-4 border-2 rounded-xl focus:ring-2 outline-none text-lg transition shadow-md"
+            style={{ 
+                borderColor: COLORS.ACCENT_LIGHT, 
+                color: COLORS.TEXT_DARK, 
+                backgroundColor: COLORS.BG_CARD, 
+                '--tw-ring-color': COLORS.PRIMARY, 
+            }}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="taskCategory" className="text-sm font-semibold flex items-center" style={{ color: COLORS.TEXT_MEDIUM }}>
+             <List className='w-4 h-4 mr-2' style={{ color: COLORS.ACCENT_PINK }} /> {t.categoryLabel}
+          </label>
+          <select
+            id="taskCategory"
+            value={taskCategory}
+            onChange={(e) => setTaskCategory(e.target.value)}
+            className="w-full p-4 border-2 rounded-xl focus:ring-2 outline-none text-lg appearance-none transition shadow-md"
+            style={{ 
+                borderColor: COLORS.ACCENT_LIGHT, 
+                color: COLORS.TEXT_DARK, 
+                backgroundColor: COLORS.BG_CARD, 
+                '--tw-ring-color': COLORS.PRIMARY,
+                backgroundImage: 'none'
+            }}
+          >
+            {CATEGORIES.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="taskStartDate" className="text-sm font-semibold flex items-center" style={{ color: COLORS.TEXT_MEDIUM }}>
+             <CalendarCheck className='w-4 h-4 mr-2' style={{ color: COLORS.PRIMARY }} /> {t.startDateLabel}
+          </label>
+          <input
+            id="taskStartDate"
+            type="date"
+            value={taskStartDate}
+            onChange={(e) => setTaskStartDate(e.target.value)}
+            className="w-full p-4 border-2 rounded-xl transition shadow-md"
+            style={{ borderColor: COLORS.ACCENT_LIGHT, color: COLORS.TEXT_DARK, backgroundColor: COLORS.BG_CARD }}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="taskDate" className="text-sm font-semibold flex items-center" style={{ color: COLORS.TEXT_MEDIUM }}>
+             <Calendar className='w-4 h-4 mr-2' style={{ color: COLORS.ACCENT_PINK }} /> {t.dueDateLabel}
+          </label>
+          <input
+            id="taskDate"
+            type="date"
+            value={taskDate}
+            onChange={(e) => setTaskDate(e.target.value)}
+            className="w-full p-4 border-2 rounded-xl transition shadow-md"
+            style={{ borderColor: COLORS.ACCENT_LIGHT, color: COLORS.TEXT_DARK, backgroundColor: COLORS.BG_CARD }}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="taskTime" className="text-sm font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>
+            {t.timeLabel}
+          </label>
+          <input
+            id="taskTime"
+            type="time"
+            value={taskTime}
+            onChange={(e) => setTaskTime(e.target.value)}
+            className="w-full p-4 border-2 rounded-xl transition shadow-md"
+            style={{ borderColor: COLORS.ACCENT_LIGHT, color: COLORS.TEXT_DARK, backgroundColor: COLORS.BG_CARD }}
+          />
+        </div>
+        
+        <button
+          type="submit"
+          className="w-full mt-auto py-4 text-white font-extrabold text-lg rounded-2xl shadow-xl hover:opacity-90 transition duration-300 disabled:bg-gray-500 disabled:shadow-none"
+          style={{ backgroundColor: COLORS.PRIMARY }}
+          disabled={!taskName.trim() || !taskDate}
+        >
+          {t.saveBtn}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+// --- Komponen Modal Edit Profil (Full Translated) ---
+const EditProfileModal = ({ isVisible, closeModal, userProfile, updateUserProfile, COLORS, t }) => {
+    const [name, setName] = useState(userProfile.name);
+    const [role, setRole] = useState(userProfile.role);
+
+    useEffect(() => {
+        if (isVisible) {
+            setName(userProfile.name);
+            setRole(userProfile.role);
+        }
+    }, [isVisible, userProfile]);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        updateUserProfile({ name: name.trim(), role: role.trim() });
+        closeModal();
+    };
+
+    if (!isVisible) return null;
+
+    return (
+        <div className="absolute inset-0 z-50 p-6 flex flex-col h-full overflow-y-auto transform transition duration-300 ease-in-out" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+            <div className="flex items-center mb-10 border-b pb-4" style={{ borderColor: COLORS.ACCENT_LIGHT }}>
+                <button onClick={closeModal} className="p-2 rounded-full hover:opacity-80 transition">
+                    <ChevronLeft className="w-6 h-6" style={{ color: COLORS.TEXT_DARK }} />
+                </button>
+                <h1 className="text-2xl font-extrabold ml-4" style={{ color: COLORS.TEXT_DARK }}>{t.editProfileTitle}</h1>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col space-y-6 flex-grow">
+                <div className="space-y-2">
+                    <label htmlFor="userName" className="text-sm font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>
+                        {t.nameLabel}
+                    </label>
+                    <input
+                        id="userName"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder={t.namePlaceholder}
+                        className="w-full p-4 border-2 rounded-xl focus:ring-2 outline-none text-lg transition shadow-md"
+                        style={{ 
+                            borderColor: COLORS.ACCENT_LIGHT, 
+                            color: COLORS.TEXT_DARK, 
+                            backgroundColor: COLORS.BG_CARD, 
+                            '--tw-ring-color': COLORS.PRIMARY,
+                        }}
+                        required
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label htmlFor="userRole" className="text-sm font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>
+                        {t.roleLabel}
+                    </label>
+                    <input
+                        id="userRole"
+                        type="text"
+                        value={role}
+                        onChange={(e) => setRole(e.target.value)}
+                        placeholder={t.rolePlaceholder}
+                        className="w-full p-4 border-2 rounded-xl focus:ring-2 outline-none text-lg transition shadow-md"
+                        style={{ 
+                            borderColor: COLORS.ACCENT_LIGHT, 
+                            color: COLORS.TEXT_DARK, 
+                            backgroundColor: COLORS.BG_CARD, 
+                            '--tw-ring-color': COLORS.PRIMARY,
+                        }}
+                    />
+                </div>
+                
+                <button
+                    type="submit"
+                    className="w-full mt-auto py-4 text-white font-extrabold text-lg rounded-2xl shadow-xl hover:opacity-90 transition duration-300 disabled:opacity-50"
+                    style={{ backgroundColor: COLORS.ACCENT_PINK }}
+                    disabled={!name.trim()}
+                >
+                    {t.saveProfileBtn}
+                </button>
+            </form>
+        </div>
+    );
+};
+
+// --- Komponen Profil (Chart Labels Translated) ---
+const ProfileScreen = ({ userProfile, openEditProfileModal, tasks, COLORS, t }) => {
+  const stats = useMemo(() => {
+    const today = new Date();
+    const totalCompleted = tasks.filter(t => t.completed).length;
+    const totalPending = tasks.filter(t => !t.completed).length;
+    const totalTasks = tasks.length;
+    
+    const calculatedCompletionRate = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
+    
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); 
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+    const completedTasks = tasks.filter(t => t.completed);
+
+    const productivityMap = Array(7).fill(0); 
+
+    completedTasks.forEach(task => {
+        const taskDate = new Date(task.dueDate);
+        if (taskDate >= startOfWeek && taskDate < endOfWeek) {
+            const dayIndex = taskDate.getDay(); 
+            productivityMap[dayIndex] += 1; 
+        }
+    });
+
+    const calculatedWeeklyData = productivityMap.map((count, index) => ({
+        // Menggunakan nama hari dari Translation
+        day: t.chartDays[index],
+        hours: count, 
+    }));
+
+    const totalCompletedTasksThisWeek = calculatedWeeklyData.reduce((sum, item) => sum + item.hours, 0);
+    const maxProductivity = Math.max(...calculatedWeeklyData.map(item => item.hours), 5); 
+
+    return {
+        productiveTime: totalCompletedTasksThisWeek, 
+        completionRate: calculatedCompletionRate,
+        tasksCompleted: totalCompleted,
+        tasksPending: totalPending,
+        weeklyProductivity: calculatedWeeklyData, 
+        maxProductivity,
+        weekDays: calculatedWeeklyData.map(item => item.day),
+    };
+  }, [tasks, t]); // Add t as dependency
+
+  return (
+    <div className="p-4 space-y-6 flex flex-col h-full overflow-y-auto" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+      {/* UBAH: Kotak Data Diri disamakan dengan gaya Sapaan (Gradient) */}
+      <div 
+        className="flex flex-col items-center p-6 rounded-3xl shadow-xl relative mb-2" 
+        style={{ 
+             // Menerapkan warna gradient seperti "Greeting Card"
+             background: `linear-gradient(135deg, ${COLORS.ACCENT_LIGHT}, ${COLORS.PRIMARY})`,
+             color: COLORS.INVERT_TEXT // Text menjadi putih/invert
+        }}
+      >
+        <button
+            onClick={openEditProfileModal}
+            className="absolute top-3 right-3 p-2 rounded-full transition hover:bg-white/20"
+            style={{ color: COLORS.INVERT_TEXT }} // Icon Edit jadi putih
+            title={t.editProfileTitle}
+        >
+            <Edit className="w-5 h-5"/>
+        </button>
+        
+        {/* Avatar Container: Border menjadi putih agar kontras */}
+        <div className="w-24 h-24 rounded-full overflow-hidden border-4 shadow-lg mb-3" style={{ backgroundColor: COLORS.ACCENT_PINK, borderColor: COLORS.INVERT_TEXT }}>
+            <div className="w-full h-full flex items-center justify-center text-4xl font-bold" style={{ backgroundColor: COLORS.ACCENT_PINK, color: COLORS.INVERT_TEXT }}>
+                {userProfile.name ? userProfile.name[0] : 'E'}
+            </div>
+        </div>
+        
+        {/* Nama & Role */}
+        <h1 className="text-2xl font-bold text-center truncate">{userProfile.name}</h1>
+        <p className="text-sm italic opacity-90">{userProfile.role || t.defaultRole}</p>
+      </div>
+
+      <div className="p-6 rounded-3xl shadow-xl space-y-4" style={{ backgroundColor: COLORS.BG_CARD }}>
+        <h2 className="text-lg font-extrabold border-b pb-2" style={{ color: COLORS.TEXT_DARK, borderColor: COLORS.ACCENT_LIGHT }}>{t.taskPerformance}</h2>
+        <div className="flex justify-around items-center">
+          <div className="relative w-24 h-24 flex items-center justify-center">
+            <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+              <path stroke={COLORS.BORDER} d="M18 2.0845a15.9155 15.9155 0 010 31.831a15.9155 15.9155 0 010-31.831" strokeWidth="2" fill="none" />
+              <path stroke={COLORS.ACCENT_PINK} strokeDasharray={`${stats.completionRate}, 100`} d="M18 2.0845a15.9155 15.9155 0 010 31.831a15.9155 15.9155 0 010-31.831" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+            </svg>
+            <span className="absolute text-xl font-extrabold" style={{ color: COLORS.TEXT_DARK }}>{stats.completionRate}%</span>
+          </div>
+
+          <div className="space-y-2 text-right">
+            <p className="text-sm" style={{ color: COLORS.TEXT_MEDIUM }}>{t.totalCompletedWeek}</p>
+            <h3 className="text-3xl font-extrabold" style={{ color: COLORS.PRIMARY }}>{stats.productiveTime} {t.tasksUnit}</h3>
+          </div>
+        </div>
+
+        <div className="flex justify-between pt-4 border-t" style={{ borderColor: COLORS.BORDER }}>
+          <div className="text-center p-3 rounded-xl shadow-md w-[48%] transition hover:opacity-90" style={{ backgroundColor: COLORS.BG_MAIN, border: `1px solid ${COLORS.ACCENT_LIGHT}` }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>{t.total} {t.completed}</p>
+            <h4 className="text-2xl font-bold" style={{ color: COLORS.PRIMARY }}>{stats.tasksCompleted}</h4>
+          </div>
+          <div className="text-center p-3 rounded-xl shadow-md w-[48%] transition hover:opacity-90" style={{ backgroundColor: COLORS.BG_MAIN, border: `1px solid ${COLORS.ACCENT_LIGHT}` }}>
+            <p className="text-xs font-semibold" style={{ color: COLORS.TEXT_MEDIUM }}>{t.total} {t.pending}</p>
+            <h4 className="text-2xl font-bold" style={{ color: COLORS.PRIMARY }}>{stats.tasksPending}</h4>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-3xl shadow-xl space-y-4 mb-20" style={{ backgroundColor: COLORS.BG_CARD }}>
+        <h2 className="text-lg font-extrabold border-b pb-2" style={{ color: COLORS.TEXT_DARK, borderColor: COLORS.ACCENT_LIGHT }}>
+            {t.weeklyChartTitle}
+        </h2>
+        <div className="flex justify-between items-end h-32 pt-4">
+          {stats.weeklyProductivity.map((item, index) => (
+            <div key={index} className="flex flex-col items-center h-full justify-end w-1/8 group cursor-pointer relative">
+               <div className="absolute -top-6 text-xs font-bold px-2 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    style={{ backgroundColor: COLORS.TEXT_DARK, color: COLORS.INVERT_TEXT }}>
+                    {item.hours}
+                </div>
+              <div
+                className="w-6 rounded-t-lg transition-all duration-300 shadow-md"
+                style={{ height: `${(item.hours / stats.maxProductivity) * 100}%`, backgroundColor: COLORS.PRIMARY, minHeight: '4px' }} 
+                title={`${item.day}: ${item.hours} tugas`}
+              ></div>
+              <span className="text-xs mt-1 font-medium" style={{ color: COLORS.TEXT_MEDIUM }}>{item.day}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Komponen Layar Kategori (Full Translated) ---
+const KategoriScreen = ({ tasks, COLORS, t, language }) => {
+    const categorizedTasks = useMemo(() => {
+        const categories = {
+            [t.catWork]: [], // Kunci dinamis berdasarkan bahasa
+            [t.catEdu]: [],
+            [t.catPersonal]: [],
+        };
+        
+        const mapCategory = (cat) => {
+             if (cat === 'Kerja' || cat === 'Work') return t.catWork;
+             if (cat === 'Pendidikan' || cat === 'Education') return t.catEdu;
+             return t.catPersonal;
+        }
+
+        tasks.forEach(task => {
+            const mappedCat = mapCategory(task.category);
+            if (categories.hasOwnProperty(mappedCat)) {
+                categories[mappedCat].push(task);
+            }
+        });
+        
+        Object.keys(categories).forEach(cat => {
+            categories[cat].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            });
+        });
+
+        return categories;
+    }, [tasks, t]);
+
+    const getCategoryDetails = (category) => {
+        if (category === t.catWork) return { icon: Briefcase, color: '#33A07A' };
+        if (category === t.catEdu) return { icon: BookOpen, color: '#DC6C39' };
+        return { icon: Heart, color: COLORS.ACCENT_PINK };
+    };
+    
+    const TaskItem = ({ task, detail, COLORS }) => (
+        <div className="p-3 mb-2 rounded-xl border flex items-center justify-between shadow-sm" 
+             style={{ backgroundColor: COLORS.BG_CARD, borderColor: COLORS.BORDER }}>
+            <div className="flex items-center space-x-3">
+                 <CheckCircle className={`w-4 h-4 ${task.completed ? 'opacity-100' : 'opacity-30'}`} style={{ color: detail.color }}/>
+                <span className={`text-sm font-medium ${task.completed ? 'line-through opacity-60' : ''}`} style={{ color: COLORS.TEXT_DARK }}>
+                    {task.name}
+                </span>
+            </div>
+            <span className="text-xs italic" style={{ color: COLORS.TEXT_MEDIUM }}>
+                {new Date(task.dueDate).toLocaleDateString(language === 'id' ? 'id-ID' : 'en-US', { day: 'numeric', month: 'short' })}
+            </span>
+        </div>
+    );
+
+    return (
+        <div className="p-4 space-y-6 flex flex-col h-full overflow-y-auto" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+            <h1 className="text-2xl font-extrabold border-b pb-3" style={{ color: COLORS.PRIMARY, borderColor: COLORS.ACCENT_LIGHT }}>
+                {t.catGroupTitle}
+            </h1>
+            
+            <p className="text-sm font-medium italic" style={{ color: COLORS.TEXT_MEDIUM }}>
+                {t.catSubtitle}
+            </p>
+            
+            {Object.keys(categorizedTasks).map(category => {
+                const tasksInCat = categorizedTasks[category];
+                const detail = getCategoryDetails(category);
+                const pendingCount = tasksInCat.filter(t => !t.completed).length;
+
+                return (
+                    <div key={category} className="p-5 rounded-3xl shadow-xl space-y-3" style={{ backgroundColor: COLORS.BG_CARD }}>
+                        <div className="flex items-center justify-between border-b pb-3 mb-2" style={{ borderColor: COLORS.BORDER }}>
+                            <h2 className="text-lg font-extrabold flex items-center" style={{ color: detail.color }}>
+                                <detail.icon className="w-6 h-6 mr-3" style={{ color: detail.color }}/>
+                                {category} ({pendingCount})
+                            </h2>
+                            <span className="text-xs px-3 py-1 rounded-full font-semibold" style={{ backgroundColor: detail.color + '20', color: detail.color }}>
+                                {t.total}: {tasksInCat.length}
+                            </span>
+                        </div>
+                        
+                        {tasksInCat.length > 0 ? (
+                            <div className="space-y-2">
+                                {tasksInCat.map(task => (
+                                    <TaskItem key={task.id} task={task} detail={detail} COLORS={COLORS} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-4 rounded-xl shadow-inner" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_MEDIUM }}>
+                                <Zap className="w-5 h-5 mx-auto mb-1" style={{ color: detail.color }}/>
+                                <p className="text-sm">{t.noTasksInCat}</p>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+
+const SettingsScreen = ({ COLORS, t }) => (
+    <div className="p-8 text-center h-full flex flex-col items-center justify-center" style={{ backgroundColor: COLORS.BG_MAIN, color: COLORS.TEXT_DARK }}>
+        <Settings className="w-12 h-12 mb-4" style={{ color: COLORS.PRIMARY }}/>
+        <h1 className="text-2xl font-bold mb-2">{t.settingsTitle}</h1>
+        <p className="text-sm" style={{ color: COLORS.TEXT_MEDIUM }}>{t.settingsDesc}</p>
+    </div>
+);
+
+
+const BottomNav = ({ screen, setScreen, COLORS, t }) => {
+  const NavItem = ({ icon: Icon, label, name }) => (
+    <button
+      onClick={() => setScreen(name)}
+      className={`flex flex-col items-center p-2 transition duration-300 ${
+        screen === name ? 'font-bold transform -translate-y-1' : 'hover:opacity-80'
+      }`}
+      style={{ color: screen === name ? COLORS.PRIMARY : COLORS.TEXT_MEDIUM }}
+    >
+      <Icon className="w-6 h-6" />
+      <span className="text-xs mt-1">{label}</span>
+    </button>
+  );
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 h-16 border-t flex justify-around items-center shadow-2xl z-40 rounded-t-3xl" style={{ backgroundColor: COLORS.BG_CARD, borderColor: COLORS.BORDER }}>
+      <NavItem icon={Home} label={t.home} name="beranda" />
+      <NavItem icon={Calendar} label={t.calendar} name="kalender" />
+      <NavItem icon={List} label={t.categories} name="kategori" />
+      <NavItem icon={User} label={t.profile} name="profile" />
+    </div>
+  );
+};
+
+// --- Komponen Utama Aplikasi ---
+
+const App = () => {
+  const [screen, setScreen] = useState('beranda'); 
+  const [isAddTaskModalVisible, setIsAddTaskModalVisible] = useState(false);
+  const [isEditProfileModalVisible, setIsEditProfileModalVisible] = useState(false); 
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false); 
+  const [theme, setTheme] = useState('light'); 
+  const [language, setLanguage] = useState('id'); // STATE BAHASA
+  
+  const [userProfile, setUserProfile] = useState({
+      name: 'Ega Nur F',
+      role: '', // DIUBAH: Kosongkan ini agar menggunakan defaultRole yang bisa diterjemahkan otomatis
+  });
+  
+  const [tasks, setTasks] = useState([]); 
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [notification, setNotification] = useState({ message: '', isVisible: false });
+
+  const COLORS = useMemo(() => THEMES[theme], [theme]);
+  const t = useMemo(() => TRANSLATIONS[language], [language]); 
+  
+  const showNotification = useCallback((message) => {
+      setNotification({ message, isVisible: true });
+      setTimeout(() => {
+          setNotification(prev => ({ ...prev, isVisible: false }));
+      }, 3500); 
+  }, []);
+
+  const updateUserProfile = (newProfile) => {
+      setUserProfile(newProfile);
+      showNotification("Profil berhasil diperbarui!"); // (Bisa ditambahkan ke translasi jika perlu)
+  };
+
+  const currentYear = currentMonth.getFullYear();
+  const nextYear = currentYear + 1;
+  const holidays = useMemo(() => {
+      const currentYearHolidays = getHolidays(currentYear);
+      const nextYearHolidays = getHolidays(nextYear);
+      return [...currentYearHolidays, ...nextYearHolidays];
+  }, [currentYear, nextYear]);
+
+  const addTask = (newTask) => {
+    setTasks(prev => [...prev, newTask]);
+  };
+  
+  const toggleTaskCompleted = (id) => {
+    setTasks(prev => 
+        prev.map(task => 
+            task.id === id ? { ...task, completed: !task.completed } : task
+        )
+    );
+  };
+  
+  const toggleTheme = () => {
+      setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+  
+  const toggleLanguage = () => {
+      setLanguage(prev => prev === 'id' ? 'en' : 'id');
+  };
+  
+  const toggleSidebar = () => {
+      setIsSidebarVisible(prev => !prev);
+  };
+
+  const openAddTaskModal = () => setIsAddTaskModalVisible(true);
+  const closeAddTaskModal = () => setIsAddTaskModalVisible(false);
+  const openEditProfileModal = () => setIsEditProfileModalVisible(true);
+  const closeEditProfileModal = () => setIsEditProfileModalVisible(false);
+
+
+  const renderScreen = () => {
+    switch (screen) {
+      case 'beranda':
+        return <BerandaScreen 
+                tasks={tasks} 
+                openAddTaskModal={openAddTaskModal} 
+                toggleSidebar={toggleSidebar} 
+                toggleTaskCompleted={toggleTaskCompleted}
+                userProfile={userProfile}
+                COLORS={COLORS} 
+                t={t} 
+                language={language}
+            />;
+      case 'kalender':
+        return <CalendarView currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} holidays={holidays} tasks={tasks} COLORS={COLORS} t={t} />;
+      case 'profile':
+        return <ProfileScreen 
+                userProfile={userProfile} 
+                openEditProfileModal={openEditProfileModal} 
+                tasks={tasks} 
+                COLORS={COLORS} 
+                t={t}
+            />;
+      case 'kategori':
+        return <KategoriScreen tasks={tasks} COLORS={COLORS} t={t} language={language} />; 
+      case 'settings':
+        return <SettingsScreen COLORS={COLORS} t={t} />;
+      default:
+        return <BerandaScreen 
+                tasks={tasks} 
+                openAddTaskModal={openAddTaskModal} 
+                toggleSidebar={toggleSidebar} 
+                toggleTaskCompleted={toggleTaskCompleted}
+                userProfile={userProfile}
+                COLORS={COLORS}
+                t={t}
+                language={language}
+            />;
+    }
+  };
+
+  return (
+    // UBAH: Wrapper Utama sekarang menggunakan logika 'Mobile First'.
+    // Secara default (mobile): w-full, h-[100dvh] (tinggi dinamis layar HP), tidak ada margin.
+    // Jika layar > 640px (sm): baru kita berikan style "simulasi HP" (tengah, ada border, rounded).
+    <div className="w-full h-[100dvh] sm:h-screen sm:flex sm:justify-center sm:items-center transition-colors duration-500" 
+         style={{ backgroundColor: COLORS.BG_MAIN }}>
+      
+      {/* Container Aplikasi */}
+      {/* Mobile: w-full h-full, overflow-hidden, tidak ada shadow/rounded. */}
+      {/* Desktop (sm): w-full tapi dibatasi max-w-sm, rounded, shadow. */}
+      <div className="relative w-full h-full sm:h-[850px] sm:max-w-sm sm:rounded-[40px] sm:shadow-2xl overflow-hidden flex flex-col transition-all duration-300" 
+           style={{ backgroundColor: COLORS.BG_CARD }}>
+        
+        {/* Kontainer Scrollable */}
+        <div className="flex-grow overflow-y-auto pb-20 scrollbar-hide">
+          {renderScreen()}
+        </div>
+        
+        {(screen === 'kalender' || screen === 'beranda' || screen === 'kategori') && (
+          <button
+            onClick={openAddTaskModal}
+            className="absolute bottom-20 right-6 w-14 h-14 text-white rounded-full flex items-center justify-center shadow-2xl hover:opacity-90 transition transform hover:scale-110 z-40"
+            style={{ backgroundColor: COLORS.PRIMARY, color: COLORS.INVERT_TEXT }}
+            title={t.addTaskBtn}
+          >
+            <Plus className="w-8 h-8" />
+          </button>
+        )}
+
+        <TambahAktivitasScreen 
+          isVisible={isAddTaskModalVisible} 
+          closeModal={closeAddTaskModal} 
+          addTask={addTask} 
+          navigate={setScreen}
+          showNotification={showNotification} 
+          COLORS={COLORS}
+          t={t} 
+        />
+        
+        <EditProfileModal 
+            isVisible={isEditProfileModalVisible}
+            closeModal={closeEditProfileModal}
+            userProfile={userProfile}
+            updateUserProfile={updateUserProfile}
+            COLORS={COLORS}
+            t={t}
+        />
+
+
+        {/* Sidebar/Drawer dengan Fitur Bahasa */}
+        <Sidebar 
+            isVisible={isSidebarVisible} 
+            onClose={() => setIsSidebarVisible(false)} 
+            toggleTheme={toggleTheme} 
+            currentTheme={theme}
+            toggleLanguage={toggleLanguage} 
+            currentLanguage={language}
+            navigate={setScreen}
+            userProfile={userProfile}
+            COLORS={COLORS}
+            t={t} 
+        />
+
+        <NotificationToast 
+            message={notification.message} 
+            isVisible={notification.isVisible} 
+            COLORS={COLORS}
+        />
+
+        <BottomNav screen={screen} setScreen={setScreen} COLORS={COLORS} t={t} />
+      </div>
+    </div>
+  );
+};
+
+const getHolidays = (year) => {
+    let holidays = [];
+    const fixedHolidays = [
+        { date: `${year}-01-01`, name: 'Tahun Baru Masehi', type: 'Nasional' },
+        { date: `${year}-05-01`, name: 'Hari Buruh Internasional', type: 'Nasional' },
+        { date: `${year}-06-01`, name: 'Hari Lahir Pancasila', type: 'Nasional' },
+        { date: `${year}-08-17`, name: 'Hari Kemerdekaan RI', type: 'Nasional' },
+        { date: `${year}-12-25`, name: 'Hari Raya Natal', type: 'Nasional' },
+    ];
+    holidays.push(...fixedHolidays);
+
+    if (year === 2025) {
+        holidays.push(
+            { date: '2025-01-29', name: 'Tahun Baru Imlek 2576 Kongzili', type: 'Nasional' }, 
+            { date: '2025-03-31', name: 'Hari Suci Nyepi Tahun Baru Saka 1947', type: 'Nasional' },
+            { date: '2025-04-18', name: 'Wafat Isa Almasih (Jumat Agung)', type: 'Nasional' },
+            { date: '2025-04-20', name: 'Hari Raya Paskah', type: 'Nasional' },
+            { date: '2025-04-20', name: 'Cuti Bersama Idul Fitri', type: 'Cuti Bersama' },
+            { date: '2025-04-21', name: 'Hari Raya Idul Fitri 1446 H', type: 'Nasional' },
+            { date: '2025-04-22', name: 'Hari Raya Idul Fitri 1446 H', type: 'Nasional' },
+            { date: '2025-04-23', name: 'Cuti Bersama Idul Fitri', type: 'Cuti Bersama' },
+            { date: '2025-04-24', name: 'Cuti Bersama Idul Fitri', type: 'Cuti Bersama' },
+            { date: '2025-05-29', name: 'Kenaikan Isa Almasih', type: 'Nasional' },
+            { date: '2025-06-12', name: 'Hari Raya Waisak 2569 BE', type: 'Nasional' },
+            { date: '2025-06-29', name: 'Hari Raya Idul Adha 1446 H', type: 'Nasional' },
+            { date: '2025-07-27', name: 'Tahun Baru Islam 1447 H', type: 'Nasional' },
+            { date: '2025-10-05', name: 'Maulid Nabi Muhammad SAW', type: 'Nasional' },
+            { date: '2025-12-26', name: 'Cuti Bersama Natal', type: 'Cuti Bersama' },
+        );
+    } else if (year === 2026) {
+         holidays.push(
+            { date: '2026-02-18', name: 'Tahun Baru Imlek 2577 Kongzili', type: 'Nasional' }, 
+            { date: '2026-03-20', name: 'Hari Suci Nyepi Tahun Baru Saka 1948', type: 'Nasional' },
+            { date: '2026-04-03', name: 'Wafat Isa Almasih (Jumat Agung)', type: 'Nasional' },
+            { date: '2026-04-05', name: 'Hari Raya Paskah', type: 'Nasional' },
+            { date: '2026-04-07', name: 'Cuti Bersama Idul Fitri', type: 'Cuti Bersama' },
+            { date: '2026-04-08', name: 'Hari Raya Idul Fitri 1447 H', type: 'Nasional' },
+            { date: '2026-04-09', name: 'Hari Raya Idul Fitri 1447 H', type: 'Nasional' },
+            { date: '2026-04-10', name: 'Cuti Bersama Idul Fitri', type: 'Cuti Bersama' },
+            { date: '2026-05-14', name: 'Kenaikan Isa Almasih', type: 'Nasional' },
+            { date: '2026-06-01', name: 'Hari Raya Waisak 2570 BE', type: 'Nasional' },
+            { date: '2026-06-18', name: 'Hari Raya Idul Adha 1447 H', type: 'Nasional' },
+            { date: '2026-07-17', name: 'Tahun Baru Islam 1448 H', type: 'Nasional' },
+            { date: '2026-09-26', name: 'Maulid Nabi Muhammad SAW', type: 'Nasional' },
+            { date: '2026-12-24', name: 'Cuti Bersama Natal', type: 'Cuti Bersama' },
+        );
+    }
+    
+    return holidays.map(h => ({
+        ...h,
+        date: h.date,
+        type: h.type,
+    }));
+};
+
+export default App;
